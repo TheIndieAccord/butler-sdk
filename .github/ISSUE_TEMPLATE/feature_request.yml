@@ -1,0 +1,16 @@
+name: Feature request
+description: Something you need from an SDK or from the Butler API.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What are you trying to do?
+      description: Describe the game or tool and the problem, not only the solution you have in mind.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it belong?
+      options: [An SDK only, The Butler API (server side), Docs or samples, Not sure]

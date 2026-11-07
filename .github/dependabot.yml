@@ -1,0 +1,16 @@
+# Keeps pinned action SHAs and package dependencies current.
+# Dependabot pull requests run the same fork-safe CI as everyone else.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  # Enable once packages/ts has a package.json:
+  # - package-ecosystem: npm
+  #   directory: /packages/ts
+  #   schedule:
+  #     interval: weekly

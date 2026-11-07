@@ -1,0 +1,56 @@
+{
+  "name": "never-throws",
+  "description": "Bad input (empty name, 129-char name, non-object props, network error) never throws into game code; invalid events are dropped with a debug log only.",
+  "config": {
+    "doormanUrl": "https://doorman.test",
+    "ingestToken": "00000000-0000-4000-8000-000000000001",
+    "proxyKey": "pk_test_conformance",
+    "consent": "granted",
+    "build": "1.0.0",
+    "installId": "install-fixture-1",
+    "random": [
+      0.5
+    ]
+  },
+  "steps": [
+    {
+      "call": "track",
+      "name": ""
+    },
+    {
+      "call": "track",
+      "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "call": "track",
+      "name": "ok",
+      "props": "not-an-object"
+    },
+    {
+      "call": "flush"
+    },
+    {
+      "respond": {
+        "network_error": true
+      }
+    }
+  ],
+  "expect": {
+    "throws": false,
+    "requests": [
+      {
+        "method": "GET",
+        "path": "/game/config",
+        "query": {
+          "ingest_token": "00000000-0000-4000-8000-000000000001",
+          "build": "1.0.0"
+        },
+        "headers": {
+          "x-proxy-key": "pk_test_conformance"
+        }
+      }
+    ],
+    "queue_length": 0,
+    "logs_above_debug": 0
+  }
+}

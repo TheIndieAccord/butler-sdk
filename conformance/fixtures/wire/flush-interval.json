@@ -1,0 +1,106 @@
+{
+  "name": "flush-interval",
+  "description": "A single event is sent once flushIntervalMs passes.",
+  "config": {
+    "doormanUrl": "https://doorman.test",
+    "ingestToken": "00000000-0000-4000-8000-000000000001",
+    "proxyKey": "pk_test_conformance",
+    "consent": "granted",
+    "build": "1.0.0",
+    "installId": "install-fixture-1",
+    "random": [
+      0.5
+    ],
+    "flushIntervalMs": 15000
+  },
+  "steps": [
+    {
+      "call": "track",
+      "name": "a"
+    },
+    {
+      "advance_ms": 14999
+    },
+    {
+      "assert": {
+        "requests": 0
+      }
+    },
+    {
+      "advance_ms": 1
+    },
+    {
+      "respond": {
+        "status": 200,
+        "body": {
+          "enabled": true,
+          "sample_rates": {},
+          "max_batch": 100,
+          "ttl_s": 300
+        }
+      }
+    },
+    {
+      "respond": {
+        "status": 200,
+        "body": {
+          "accepted": 1,
+          "duplicates": 0,
+          "rejected": 0,
+          "results": [
+            {
+              "index": 0,
+              "accepted": true,
+              "status": "accepted",
+              "duplicate": false
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expect": {
+    "requests": [
+      {
+        "method": "GET",
+        "path": "/game/config",
+        "query": {
+          "ingest_token": "00000000-0000-4000-8000-000000000001",
+          "build": "1.0.0"
+        },
+        "headers": {
+          "x-proxy-key": "pk_test_conformance"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/game/events/batch",
+        "query": {
+          "ingest_token": "00000000-0000-4000-8000-000000000001"
+        },
+        "headers": {
+          "x-proxy-key": "pk_test_conformance",
+          "content-type": "application/json"
+        },
+        "body": {
+          "events": [
+            {
+              "user_id": "<same:install>",
+              "event_name": "a",
+              "metadata": {
+                "$sdk": "<any>",
+                "$sdk_version": "<any>",
+                "$platform": "<any>",
+                "$build": "1.0.0"
+              },
+              "timestamp": "<iso8601>",
+              "event_id": "<uuidv7>",
+              "session_id": "<same:session>"
+            }
+          ]
+        }
+      }
+    ],
+    "queue_length": 0
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "name": "state-mismatch",
+  "description": "A redirect whose state differs from the one sent is refused; no token request is made.",
+  "config": {
+    "doormanUrl": "https://doorman.test",
+    "ingestToken": "00000000-0000-4000-8000-000000000001",
+    "proxyKey": "pk_test_conformance",
+    "consent": "granted",
+    "build": "1.0.0",
+    "installId": "install-fixture-1",
+    "random": [
+      0.5
+    ],
+    "oauth": {
+      "clientId": "client_test",
+      "redirectUri": "http://127.0.0.1:53682/callback",
+      "scopes": [
+        "profile:read"
+      ],
+      "integrationId": "00000000-0000-4000-8000-0000000000aa"
+    },
+    "issuer": "https://api.butler.test"
+  },
+  "steps": [
+    {
+      "call": "signIn",
+      "capture": "authorizeUrl"
+    },
+    {
+      "call": "handleRedirect",
+      "url": "http://127.0.0.1:53682/callback?code=abc&state=WRONG&iss=https%3A%2F%2Fapi.butler.test"
+    }
+  ],
+  "expect": {
+    "error": "state_mismatch",
+    "requests": [],
+    "player": null
+  }
+}

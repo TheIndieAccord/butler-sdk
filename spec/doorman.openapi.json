@@ -1,0 +1,187 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Doorman game gateway",
+    "version": "1.4.0",
+    "description": "The client-facing analytics path for shipped games. A game holds only a publishable ingest key (ingest_token + X-Proxy-Key): write-only, rotatable, safe to ship and expected to be extracted. Doorman holds the game's Butler secrets, mints the game-server JWT and signs each request before forwarding it to Butler. Bodies are exactly Butler's ingest bodies (see butler.client.openapi.json). `events/batch` and `config` are added in Doorman v1.4; until then SDKs fall back to `events` on 404/405.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://doorman.theindieaccord.com",
+      "description": "Production"
+    },
+    {
+      "url": "https://doorman.stg.theindieaccord.com",
+      "description": "Staging (use sandbox keys)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ingestToken": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "ingest_token",
+        "description": "Identifies the game. Public."
+      },
+      "proxyKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Proxy-Key",
+        "description": "Publishable key for the game. Public, write-only, rotated from Backstairs."
+      }
+    },
+    "parameters": {
+      "Build": {
+        "name": "build",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "description": "Build string; selects a per-build remote-config override."
+      }
+    },
+    "responses": {
+      "TooMany": {
+        "description": "Rate limited. Honour Retry-After (seconds).",
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "Refused": {
+        "description": "Unknown ingest_token or wrong X-Proxy-Key. SDKs stop sending for the rest of the session."
+      }
+    }
+  },
+  "security": [
+    {
+      "ingestToken": [],
+      "proxyKey": []
+    }
+  ],
+  "paths": {
+    "/game/events": {
+      "post": {
+        "operationId": "doormanIngestEvent",
+        "summary": "Forward one event to POST /v1/analytics/events",
+        "x-butler-operation": "POST /v1/analytics/events",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "butler.client.openapi.json#/paths/~1v1~1analytics~1events/post/requestBody/content/application~1json/schema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Butler's response, passed through.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "butler.client.openapi.json#/paths/~1v1~1analytics~1events/post/responses/200/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Refused"
+          },
+          "403": {
+            "$ref": "#/components/responses/Refused"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/game/events/batch": {
+      "post": {
+        "operationId": "doormanIngestEventBatch",
+        "summary": "Forward up to 100 events to POST /v1/analytics/events/batch",
+        "x-butler-operation": "POST /v1/analytics/events/batch",
+        "x-since": "1.4.0",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "butler.client.openapi.json#/paths/~1v1~1analytics~1events~1batch/post/requestBody/content/application~1json/schema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-index accepted, duplicate or rejected, passed through.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "butler.client.openapi.json#/paths/~1v1~1analytics~1events~1batch/post/responses/200/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Refused"
+          },
+          "403": {
+            "$ref": "#/components/responses/Refused"
+          },
+          "404": {
+            "description": "Doorman older than 1.4: fall back to /game/events."
+          },
+          "413": {
+            "description": "Body larger than Butler accepts."
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/game/config": {
+      "get": {
+        "operationId": "doormanGetAnalyticsConfig",
+        "summary": "Remote analytics config (kill switch, sampling, batch cap)",
+        "x-butler-operation": "GET /v1/analytics/config",
+        "x-since": "1.4.0",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Build"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Effective config for this game and build. Cache for ttl_s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "butler.client.openapi.json#/paths/~1v1~1analytics~1config/get/responses/200/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match)."
+          },
+          "404": {
+            "description": "Doorman older than 1.4: use built-in defaults."
+          }
+        }
+      }
+    }
+  }
+}

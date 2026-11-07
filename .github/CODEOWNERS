@@ -1,0 +1,15 @@
+# Code owners review and approve changes to the paths below.
+# GitHub picks the LAST matching line, so the general rule comes first.
+# See docs/maintainers/repo-settings.md for how this works with the rulesets.
+
+*                       @hdubel94
+
+# Files that change what the SDKs send, or how releases happen, always need
+# a maintainer review even after more owners are added above.
+/spec/                  @hdubel94
+/conformance/           @hdubel94
+/.github/               @hdubel94
+/scripts/               @hdubel94
+/LICENSE                @hdubel94
+/NOTICE                 @hdubel94
+/SECURITY.md            @hdubel94

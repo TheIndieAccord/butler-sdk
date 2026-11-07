@@ -1,0 +1,41 @@
+{
+  "name": "consent-revoked-purges",
+  "description": "Revoking consent drops everything queued (memory and persisted storage) and stops tracking.",
+  "config": {
+    "doormanUrl": "https://doorman.test",
+    "ingestToken": "00000000-0000-4000-8000-000000000001",
+    "proxyKey": "pk_test_conformance",
+    "consent": "granted",
+    "build": "1.0.0",
+    "installId": "install-fixture-1",
+    "random": [
+      0.5
+    ]
+  },
+  "steps": [
+    {
+      "call": "track",
+      "name": "a"
+    },
+    {
+      "call": "track",
+      "name": "b"
+    },
+    {
+      "call": "setConsent",
+      "granted": false
+    },
+    {
+      "call": "track",
+      "name": "c"
+    },
+    {
+      "call": "flush"
+    }
+  ],
+  "expect": {
+    "requests": [],
+    "queue_length": 0,
+    "persisted_length": 0
+  }
+}

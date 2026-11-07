@@ -1,0 +1,31 @@
+name: List a community SDK
+description: Ask for your port to be added to community/REGISTRY.json.
+labels: [community-port]
+body:
+  - type: input
+    id: repo
+    attributes:
+      label: Repository URL
+    validations:
+      required: true
+  - type: input
+    id: engine
+    attributes:
+      label: Engine or runtime
+      placeholder: "Godot 4.4 (GDScript), Defold, Love2D, Python 3.12"
+    validations:
+      required: true
+  - type: input
+    id: report
+    attributes:
+      label: Link to a green conformance run
+      description: A CI run of the fixtures in conformance/ against the current spec version.
+    validations:
+      required: true
+  - type: checkboxes
+    id: naming
+    attributes:
+      label: Naming
+      options:
+        - label: My port does not call itself official and does not use the @indieaccord scope or the com.indieaccord prefix.
+          required: true

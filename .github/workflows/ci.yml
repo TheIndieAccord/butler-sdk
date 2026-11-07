@@ -1,0 +1,93 @@
+# Checks that run on every pull request, including pull requests from forks.
+#
+# Rules for this file (see docs/maintainers/repo-settings.md):
+#   - Trigger on `pull_request`, never `pull_request_target`. A fork's code
+#     must never run with this repository's secrets or a write token.
+#   - Never reference `secrets.` here. Publishing lives in its own workflow,
+#     runs only from protected tags and needs a maintainer's approval.
+#   - Pin every third-party action to a full commit SHA, with the version in
+#     a comment so Dependabot can keep it current.
+#
+# The job names below are the required status checks in
+# .github/rulesets/main.json. Rename them in both places or merges will block.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Read-only token for every job unless a job asks for more.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  spec:
+    name: spec and fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Every JSON file parses
+        run: node scripts/check-json.mjs
+      - name: Public spec only contains allowlisted operations
+        run: node scripts/check-spec-allowlist.mjs
+
+  workflows:
+    name: workflow lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - name: actionlint
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - name: Fork-safe triggers, no secrets, actions pinned by SHA
+        run: node scripts/check-workflow-safety.mjs
+
+  docs:
+    name: docs style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Plain punctuation and working relative links
+        run: node scripts/check-docs.mjs
+
+  signoff:
+    name: sign-off
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Every commit has a Signed-off-by line (DCO)
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          missing=0
+          for sha in $(git rev-list "$BASE..$HEAD"); do
+            if ! git log -1 --format=%B "$sha" | grep -q '^Signed-off-by: '; then
+              echo "::error::commit $sha has no Signed-off-by line. Use 'git commit -s'."
+              missing=1
+            fi
+          done
+          exit "$missing"

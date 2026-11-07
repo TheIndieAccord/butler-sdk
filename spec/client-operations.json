@@ -1,0 +1,101 @@
+{
+  "$comment": "Allowlist of Butler operations published in the public SDK spec. Anything not listed here (admin, Backstairs, studio, internal) is never published. Tier: public = called from a shipped game through Doorman with a publishable key; player = a signed-in player's OAuth token; server = a game server's own credential, called directly on Butler and never from a game build.",
+  "operations": [
+    {
+      "method": "post",
+      "path": "/v1/analytics/events",
+      "tier": "public",
+      "via": "doorman",
+      "doormanRoute": "events"
+    },
+    {
+      "method": "post",
+      "path": "/v1/analytics/events/batch",
+      "tier": "public",
+      "via": "doorman",
+      "doormanRoute": "events/batch"
+    },
+    {
+      "method": "get",
+      "path": "/v1/analytics/config",
+      "tier": "public",
+      "via": "doorman",
+      "doormanRoute": "config"
+    },
+    {
+      "method": "get",
+      "path": "/v1/oauth/authorize",
+      "tier": "player"
+    },
+    {
+      "method": "post",
+      "path": "/v1/oauth/token",
+      "tier": "player"
+    },
+    {
+      "method": "get",
+      "path": "/v2/games/{integrationId}/me",
+      "tier": "player"
+    },
+    {
+      "method": "post",
+      "path": "/v1/auth/token",
+      "tier": "server"
+    },
+    {
+      "method": "post",
+      "path": "/v2/games/{integrationId}/accolades/award",
+      "tier": "server"
+    },
+    {
+      "method": "post",
+      "path": "/v2/games/{integrationId}/accolades/award-batch",
+      "tier": "server"
+    },
+    {
+      "method": "post",
+      "path": "/v2/games/{integrationId}/feats/award",
+      "tier": "server"
+    },
+    {
+      "method": "post",
+      "path": "/v2/games/{integrationId}/sessions/start",
+      "tier": "server"
+    },
+    {
+      "method": "post",
+      "path": "/v2/games/{integrationId}/sessions/end",
+      "tier": "server"
+    },
+    {
+      "method": "get",
+      "path": "/v2/games/{integrationId}/data",
+      "tier": "server"
+    },
+    {
+      "method": "get",
+      "path": "/v2/games/{integrationId}/data/{key}",
+      "tier": "server"
+    },
+    {
+      "method": "put",
+      "path": "/v2/games/{integrationId}/data/{key}",
+      "tier": "server"
+    },
+    {
+      "method": "get",
+      "path": "/v2/games/{integrationId}/decisions",
+      "tier": "server"
+    },
+    {
+      "method": "get",
+      "path": "/v2/games/{integrationId}/decisions/{key}",
+      "tier": "server"
+    },
+    {
+      "method": "put",
+      "path": "/v2/games/{integrationId}/decisions/{key}",
+      "tier": "server"
+    }
+  ]
+}

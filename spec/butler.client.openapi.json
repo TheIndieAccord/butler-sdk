@@ -1,0 +1,3482 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Butler client API",
+    "version": "0.1.0",
+    "description": "The public subset of the Butler API that games and SDKs call. Generated from the Butler server spec by scripts/sync-spec.mjs; do not edit by hand.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.butler.theindieaccord.com",
+      "description": "Production"
+    },
+    {
+      "url": "https://api.butler.stg.theindieaccord.com",
+      "description": "Staging (use sandbox keys)"
+    }
+  ],
+  "paths": {
+    "/v1/analytics/events": {
+      "post": {
+        "summary": "Ingest a game analytics event",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Append-only event log written by game servers. Authenticated via game-server JWT; the integration is taken from the JWT claims, never from the body. user_id is a free-form game-side player identifier.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "user_id",
+                  "event_name"
+                ],
+                "properties": {
+                  "user_id": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^(?!(?:[\\s\\S]*)(?:[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|(?<![\\uD800-\\uDBFF])[\\uDC00-\\uDFFF]))[^\\u0000]*$",
+                    "type": "string"
+                  },
+                  "event_name": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^(?!(?:[\\s\\S]*)(?:[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|(?<![\\uD800-\\uDBFF])[\\uDC00-\\uDFFF]))[^\\u0000]*$",
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "properties": {}
+                  },
+                  "timestamp": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "tags": {
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "pattern": "^[a-z0-9-]{1,32}$",
+                      "minLength": 1,
+                      "maxLength": 32,
+                      "type": "string"
+                    }
+                  },
+                  "event_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "session_id": {
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^(?!(?:[\\s\\S]*)(?:[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|(?<![\\uD800-\\uDBFF])[\\uDC00-\\uDFFF]))[^\\u0000]*$",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerJwt": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "accepted",
+                    "duplicate",
+                    "status"
+                  ],
+                  "properties": {
+                    "id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "accepted": {
+                      "type": "boolean"
+                    },
+                    "duplicate": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "accepted"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "duplicate"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rejected"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Butler-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^t=[0-9]+,v1=[0-9a-f]{64}$"
+            },
+            "description": "Required when calling Butler directly. `t` is Unix seconds; `v1` is hex HMAC-SHA256 of `<t>.<exact body bytes>` keyed with the integration signing secret. Valid for 300 seconds, each signature once. Doorman adds it for clients."
+          }
+        ],
+        "x-butler-tier": "public",
+        "x-butler-via": "doorman",
+        "x-doorman-route": "events"
+      }
+    },
+    "/v1/analytics/events/batch": {
+      "post": {
+        "summary": "Ingest a batch of game analytics events",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Batch form of POST /v1/analytics/events for game servers. Takes up to 100 events, each validated with the single-event rules, and writes the valid ones in one insert. The response lists accepted/rejected per index; a rejected event never fails the batch. Same game-server JWT and X-Butler-Signature (over the whole body) as single ingest.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "events"
+                ],
+                "properties": {
+                  "events": {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "description": "Up to 100 events, each shaped like the single-event body: { user_id, event_name, metadata?, timestamp?, tags?, event_id?, session_id? }.",
+                    "type": "array",
+                    "items": {}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerJwt": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "accepted",
+                    "duplicates",
+                    "rejected",
+                    "results"
+                  ],
+                  "properties": {
+                    "accepted": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "rejected": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "index",
+                          "accepted",
+                          "status",
+                          "duplicate"
+                        ],
+                        "properties": {
+                          "index": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "accepted": {
+                            "type": "boolean"
+                          },
+                          "status": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "accepted"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "duplicate"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "rejected"
+                                ]
+                              }
+                            ]
+                          },
+                          "duplicate": {
+                            "type": "boolean"
+                          },
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Butler-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^t=[0-9]+,v1=[0-9a-f]{64}$"
+            },
+            "description": "Required when calling Butler directly. `t` is Unix seconds; `v1` is hex HMAC-SHA256 of `<t>.<exact body bytes>` keyed with the integration signing secret. Valid for 300 seconds, each signature once. Doorman adds it for clients."
+          }
+        ],
+        "x-butler-tier": "public",
+        "x-butler-via": "doorman",
+        "x-doorman-route": "events/batch"
+      }
+    },
+    "/v1/analytics/config": {
+      "get": {
+        "summary": "Fetch the remote analytics config for a build",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Kill switch, per-event sample rates and batch cap for the calling integration, taken from the game-server JWT. `build` selects a per-build override when one exists. Sends an ETag and `Cache-Control: private, max-age=<ttl_s>`; a matching `If-None-Match` gets 304.",
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "build",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "bearerJwt": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "enabled",
+                    "sample_rates",
+                    "max_batch",
+                    "ttl_s"
+                  ],
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "sample_rates": {
+                      "description": "Event name (lowercase) to keep-probability, 0 to 1. Missing = 1.",
+                      "type": "object",
+                      "additionalProperties": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number"
+                      }
+                    },
+                    "max_batch": {
+                      "minimum": 1,
+                      "maximum": 100,
+                      "type": "integer"
+                    },
+                    "ttl_s": {
+                      "minimum": 10,
+                      "maximum": 3600,
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Default Response"
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-butler-tier": "public",
+        "x-butler-via": "doorman",
+        "x-doorman-route": "config"
+      }
+    },
+    "/v1/oauth/authorize": {
+      "get": {
+        "summary": "Start an OAuth authorization (code + PKCE S256)",
+        "tags": [
+          "oauth-grants"
+        ],
+        "description": "Public. `response_type=code`, `client_id`, `redirect_uri` (exact match; native loopback may vary the port), `scope` (space separated, within the client's allowed scopes), `state` (required), `code_challenge` and `code_challenge_method=S256` (the only method). An unknown or disabled client, or an unregistered redirect URI, answers 400 JSON and never redirects. Other errors redirect to the client with `error`, `state` and `iss`. A valid request is stored for 10 minutes, a browser binding cookie is set, and the browser is redirected to the consent page with the request id only. When the browser is signed in, the request belongs to that account; another account signing in later in the same browser is refused.",
+        "parameters": [
+          {
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "response_type",
+            "required": false
+          },
+          {
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "client_id",
+            "required": false
+          },
+          {
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "redirect_uri",
+            "required": false
+          },
+          {
+            "schema": {
+              "maxLength": 1024,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "scope",
+            "required": false
+          },
+          {
+            "schema": {
+              "maxLength": 1024,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "state",
+            "required": false
+          },
+          {
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "code_challenge",
+            "required": false
+          },
+          {
+            "schema": {
+              "maxLength": 16,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "code_challenge_method",
+            "required": false
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Default Response"
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_description": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "playerToken": []
+          }
+        ],
+        "x-butler-tier": "player"
+      }
+    },
+    "/v1/oauth/token": {
+      "post": {
+        "summary": "Exchange an authorization code, or rotate a refresh token",
+        "tags": [
+          "oauth-grants"
+        ],
+        "description": "`grant_type=authorization_code` with `code`, `code_verifier` (S256), `client_id` and `redirect_uri`, all matching what the code was issued for; the code is single use, and a second use revokes the refresh family issued from it. `grant_type=refresh_token` with `refresh_token` and `client_id` (and optionally a narrower `scope`): rotates the family and re-intersects its scopes with the current effective scope; a refresh never gains scopes. Responses carry a game-player access token. Public clients, no secret. Errors are RFC 6749 §5.2 JSON.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "properties": {
+                  "grant_type": {
+                    "maxLength": 4096,
+                    "type": "string"
+                  },
+                  "code": {
+                    "maxLength": 4096,
+                    "type": "string"
+                  },
+                  "code_verifier": {
+                    "maxLength": 4096,
+                    "type": "string"
+                  },
+                  "client_id": {
+                    "maxLength": 4096,
+                    "type": "string"
+                  },
+                  "redirect_uri": {
+                    "maxLength": 4096,
+                    "type": "string"
+                  },
+                  "refresh_token": {
+                    "maxLength": 4096,
+                    "type": "string"
+                  },
+                  "scope": {
+                    "maxLength": 4096,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "access_token",
+                    "token_type",
+                    "expires_in",
+                    "refresh_token",
+                    "scope"
+                  ],
+                  "properties": {
+                    "access_token": {
+                      "description": "Game-player JWT (aud butler-game-player), 15 minutes",
+                      "type": "string"
+                    },
+                    "token_type": {
+                      "type": "string",
+                      "enum": [
+                        "Bearer"
+                      ]
+                    },
+                    "expires_in": {
+                      "type": "integer"
+                    },
+                    "refresh_token": {
+                      "type": "string"
+                    },
+                    "scope": {
+                      "description": "Effective scope, space separated",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_description": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_description": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "playerToken": []
+          }
+        ],
+        "x-butler-tier": "player"
+      }
+    },
+    "/v2/games/{integrationId}/me": {
+      "get": {
+        "summary": "The signed-in player, as this game sees them (game-player token, profile:read)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game-player token only (from POST /v1/oauth/token), for this integration, holding `profile:read` in both the token and the current effective scope. Returns the pseudonymous id, display name and avatar. Never a Butler id.",
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "player_id",
+                    "display_name",
+                    "avatar"
+                  ],
+                  "properties": {
+                    "player_id": {
+                      "format": "butler-pseudonym",
+                      "description": "The player's pseudonymous id for this game (never a Butler id)",
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "type": "string"
+                    },
+                    "avatar": {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "image_url",
+                        "initials"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string"
+                        },
+                        "image_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "initials": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "playerToken": []
+          }
+        ],
+        "x-butler-tier": "player"
+      }
+    },
+    "/v1/auth/token": {
+      "post": {
+        "summary": "Game server client credentials grant",
+        "tags": [
+          "game-server"
+        ],
+        "description": "Exchange a game server's `client_id` + `client_secret` for a short-lived HS256 JWT (60 min TTL). Credentials are created in Backstairs. The issued JWT carries org_id, integration_id, tier, permissions, api_version, iat, and exp. Invalid credentials return a generic 401 to prevent client_id enumeration. Inactive integration or inactive owning org returns 403.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "client_id",
+                  "client_secret"
+                ],
+                "properties": {
+                  "client_id": {
+                    "minLength": 3,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  "client_secret": {
+                    "minLength": 8,
+                    "maxLength": 256,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "access_token",
+                    "token_type",
+                    "expires_in"
+                  ],
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "token_type": {
+                      "type": "string",
+                      "enum": [
+                        "bearer"
+                      ]
+                    },
+                    "expires_in": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      }
+    },
+    "/v2/games/{integrationId}/accolades/award": {
+      "post": {
+        "summary": "Award an accolade to a player (game server, accolades:write)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`. Always the caller's own grant, never a sibling game's. For non-internal studios, an accolade that pays currency or that the studio owns (not this game) is refused with 403 `SCOPE_NOT_GRANTED`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "player_id"
+                ],
+                "properties": {
+                  "player_id": {
+                    "format": "butler-pseudonym",
+                    "description": "The player's pseudonymous id for this game (never a Butler id)",
+                    "type": "string"
+                  },
+                  "accolade_id": {
+                    "format": "uuid",
+                    "description": "Give accolade_id or accolade_key",
+                    "type": "string"
+                  },
+                  "accolade_key": {
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "type": "string"
+                  },
+                  "progress": {}
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "user_accolade_id",
+                    "completed",
+                    "progress"
+                  ],
+                  "properties": {
+                    "user_accolade_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "completed": {
+                      "type": "boolean"
+                    },
+                    "progress": {}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      }
+    },
+    "/v2/games/{integrationId}/accolades/award-batch": {
+      "post": {
+        "summary": "Award a batch of accolades to a player (game server, accolades:write, offline sync)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`. At most 50 awards (429). Always the caller's own grant, never a sibling game's. For non-internal studios, a currency-paying or studio-owned accolade is an `invalid` item with reason `SCOPE_NOT_GRANTED`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "player_id",
+                  "awards"
+                ],
+                "properties": {
+                  "player_id": {
+                    "format": "butler-pseudonym",
+                    "description": "The player's pseudonymous id for this game (never a Butler id)",
+                    "type": "string"
+                  },
+                  "awards": {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "accolade_id"
+                      ],
+                      "properties": {
+                        "accolade_id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "earned_at": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "context": {}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "player_id",
+                    "processed",
+                    "results",
+                    "side_effects"
+                  ],
+                  "properties": {
+                    "player_id": {
+                      "format": "butler-pseudonym",
+                      "description": "The player's pseudonymous id for this game (never a Butler id)",
+                      "type": "string"
+                    },
+                    "processed": {
+                      "type": "integer"
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "accolade_id",
+                          "status"
+                        ],
+                        "properties": {
+                          "accolade_id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "status": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "awarded"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "already_completed"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "invalid"
+                                ]
+                              }
+                            ]
+                          },
+                          "user_accolade_id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "completed_at": {
+                            "anyOf": [
+                              {
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "side_effects": {
+                      "type": "object",
+                      "required": [
+                        "favors_granted",
+                        "cards_unlocked",
+                        "avatars_unlocked",
+                        "new_accolade_score"
+                      ],
+                      "properties": {
+                        "favors_granted": {
+                          "type": "integer"
+                        },
+                        "cards_unlocked": {
+                          "type": "integer"
+                        },
+                        "avatars_unlocked": {
+                          "type": "integer"
+                        },
+                        "new_accolade_score": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      }
+    },
+    "/v2/games/{integrationId}/feats/award": {
+      "post": {
+        "summary": "Award a feat to a player (game server, feats:write)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`. Always the caller's own grant, never a sibling game's. For non-internal studios, a feat that pays currency or a studio-wide feat is refused with 403 `SCOPE_NOT_GRANTED`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "player_id",
+                  "feat_id"
+                ],
+                "properties": {
+                  "player_id": {
+                    "format": "butler-pseudonym",
+                    "description": "The player's pseudonymous id for this game (never a Butler id)",
+                    "type": "string"
+                  },
+                  "feat_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "user_feat_id",
+                    "already_had"
+                  ],
+                  "properties": {
+                    "user_feat_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "already_had": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      }
+    },
+    "/v2/games/{integrationId}/sessions/start": {
+      "post": {
+        "summary": "Start a game session for a player (game server, playtime:write)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "player_id"
+                ],
+                "properties": {
+                  "player_id": {
+                    "format": "butler-pseudonym",
+                    "description": "The player's pseudonymous id for this game (never a Butler id)",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "session_id"
+                  ],
+                  "properties": {
+                    "session_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      }
+    },
+    "/v2/games/{integrationId}/sessions/end": {
+      "post": {
+        "summary": "End a game session (game server, playtime:write)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "The player is the session row's. The grant is checked before anything about the session is reported: an unknown session (or another integration's) answers like a revoked grant, and only an authorized caller learns that a session already ended (400). Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "session_id"
+                ],
+                "properties": {
+                  "session_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "duration_s"
+                  ],
+                  "properties": {
+                    "duration_s": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      }
+    },
+    "/v2/games/{integrationId}/data": {
+      "get": {
+        "summary": "List a player's data in this game (game server, playerdata:readwrite)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`. Optional `limit` (1 to 200) and `cursor` page by key.",
+        "parameters": [
+          {
+            "schema": {
+              "format": "butler-pseudonym",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "player_id",
+            "required": true,
+            "description": "The player's pseudonymous id for this game (never a Butler id)"
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "description": "Page size (1 to 200), default 50. The response always carries next_cursor."
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 1670,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "Opaque cursor from a previous response next_cursor. Malformed cursors are 400 with code INVALID_CURSOR."
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "player_id",
+                          "integration_id",
+                          "key",
+                          "value",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "player_id": {
+                            "format": "butler-pseudonym",
+                            "description": "The player's pseudonymous id for this game (never a Butler id)",
+                            "type": "string"
+                          },
+                          "integration_id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "value": {},
+                          "updated_at": {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "next_cursor": {
+                      "description": "Pass as cursor to get the next page; null on the last page.",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request; code is INVALID_CURSOR for a malformed cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Bad request; code is INVALID_CURSOR for a malformed cursor",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "INVALID_CURSOR when the cursor is malformed",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      }
+    },
+    "/v2/games/{integrationId}/data/{key}": {
+      "get": {
+        "summary": "Read one player data entry (game server, playerdata:readwrite)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`.",
+        "parameters": [
+          {
+            "schema": {
+              "format": "butler-pseudonym",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "player_id",
+            "required": true,
+            "description": "The player's pseudonymous id for this game (never a Butler id)"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "player_id",
+                    "integration_id",
+                    "key",
+                    "value",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "player_id": {
+                      "format": "butler-pseudonym",
+                      "description": "The player's pseudonymous id for this game (never a Butler id)",
+                      "type": "string"
+                    },
+                    "integration_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {},
+                    "updated_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      },
+      "put": {
+        "summary": "Write player data (game server, playerdata:readwrite)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "player_id",
+                  "value"
+                ],
+                "properties": {
+                  "player_id": {
+                    "format": "butler-pseudonym",
+                    "description": "The player's pseudonymous id for this game (never a Butler id)",
+                    "type": "string"
+                  },
+                  "value": {}
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "player_id",
+                    "integration_id",
+                    "key",
+                    "value",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "player_id": {
+                      "format": "butler-pseudonym",
+                      "description": "The player's pseudonymous id for this game (never a Butler id)",
+                      "type": "string"
+                    },
+                    "integration_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {},
+                    "updated_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      }
+    },
+    "/v2/games/{integrationId}/decisions": {
+      "get": {
+        "summary": "List a player's decisions in this game (game server, decisions:readwrite)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`. Optional `limit` (1 to 200) and `cursor` page by key.",
+        "parameters": [
+          {
+            "schema": {
+              "format": "butler-pseudonym",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "player_id",
+            "required": true,
+            "description": "The player's pseudonymous id for this game (never a Butler id)"
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "description": "Page size (1 to 200), default 50. The response always carries next_cursor."
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 1670,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "Opaque cursor from a previous response next_cursor. Malformed cursors are 400 with code INVALID_CURSOR."
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "decisions",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "decisions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "player_id",
+                          "integration_id",
+                          "key",
+                          "value",
+                          "category",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "player_id": {
+                            "format": "butler-pseudonym",
+                            "description": "The player's pseudonymous id for this game (never a Butler id)",
+                            "type": "string"
+                          },
+                          "integration_id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "value": {},
+                          "category": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updated_at": {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "next_cursor": {
+                      "description": "Pass as cursor to get the next page; null on the last page.",
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request; code is INVALID_CURSOR for a malformed cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Bad request; code is INVALID_CURSOR for a malformed cursor",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "INVALID_CURSOR when the cursor is malformed",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      }
+    },
+    "/v2/games/{integrationId}/decisions/{key}": {
+      "get": {
+        "summary": "Read one decision (game server, decisions:readwrite)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`.",
+        "parameters": [
+          {
+            "schema": {
+              "format": "butler-pseudonym",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "player_id",
+            "required": true,
+            "description": "The player's pseudonymous id for this game (never a Butler id)"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "player_id",
+                    "integration_id",
+                    "key",
+                    "value",
+                    "category",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "player_id": {
+                      "format": "butler-pseudonym",
+                      "description": "The player's pseudonymous id for this game (never a Butler id)",
+                      "type": "string"
+                    },
+                    "integration_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {},
+                    "category": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      },
+      "put": {
+        "summary": "Record a decision (game server, decisions:readwrite)",
+        "tags": [
+          "games-v2"
+        ],
+        "description": "Game server credential for this integration. `player_id` is the player's pseudonym for this game; an unknown pseudonym, an unlinked player and a revoked grant all answer 403 `PLAYER_NOT_LINKED`. Needs a consent grant holding the scope, within the integration ceiling; otherwise 403 `SCOPE_NOT_GRANTED`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "player_id",
+                  "value"
+                ],
+                "properties": {
+                  "player_id": {
+                    "format": "butler-pseudonym",
+                    "description": "The player's pseudonymous id for this game (never a Butler id)",
+                    "type": "string"
+                  },
+                  "value": {},
+                  "category": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "integrationId",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "player_id",
+                    "integration_id",
+                    "key",
+                    "value",
+                    "category",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "player_id": {
+                      "format": "butler-pseudonym",
+                      "description": "The player's pseudonymous id for this game (never a Butler id)",
+                      "type": "string"
+                    },
+                    "integration_id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {},
+                    "category": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard Butler error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard Butler error envelope",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "description": "Error class name (e.g., UnauthorizedError)",
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "Human-readable explanation",
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Stable machine-readable code when the failure has one (e.g., external_link)",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error envelope with an optional policy `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Error envelope with an optional policy `code`",
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "description": "Machine-readable reason, e.g. PLAYER_NOT_LINKED, SCOPE_NOT_GRANTED, CONSENT_REQUIRED or MINT_CAP_EXCEEDED",
+                      "type": "string"
+                    },
+                    "cap": {
+                      "description": "MINT_CAP_EXCEEDED: which cap was hit, per_grant or per_day",
+                      "type": "string"
+                    },
+                    "limit": {
+                      "description": "MINT_CAP_EXCEEDED: the cap that applies",
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "serverToken": []
+          }
+        ],
+        "x-butler-tier": "server"
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "securitySchemes": {
+      "bearerJwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "HS256 JWT from POST /v1/auth/token (game server, 60 min TTL) or POST /v1/auth/token/exchange (player access token, 15 min TTL, `type: access` claim)."
+      },
+      "playerToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Game-player access token from POST /v1/oauth/token (15 minutes)."
+      },
+      "serverToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Game-server access token from POST /v1/auth/token (60 minutes). Never in a game build."
+      }
+    }
+  }
+}
